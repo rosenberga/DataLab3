@@ -36,7 +36,7 @@ public class UdpServer {
 					serverSocket.send(sendPacket);
 				} catch (IOException e) {
 					e.printStackTrace();
-					System.out.println("THis is fucking hopeless. Please kill yourself.");
+					System.out.println("This is fucking hopeless. Please kill yourself.");
 				}
 			}
 		} catch (SocketException e) {
