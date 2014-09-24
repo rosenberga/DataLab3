@@ -9,6 +9,15 @@ public class UdpServer {
 		DatagramSocket serverSocket;
 		int port;
 		
+		InetAddress hostAddress;
+		try {
+			hostAddress = InetAddress.getLocalHost();
+			System.out.println("The host address is: " + hostAddress);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+			System.out.println("GET THE FUCK OUTTA HERE!");
+		}
+		
 		try {
 			port = Integer.parseInt(args[0]);
 			serverSocket = new DatagramSocket(port);
@@ -19,6 +28,12 @@ public class UdpServer {
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				try {
 					serverSocket.receive(receivePacket);
+					String sentence = new String(receivePacket.getData());
+					System.out.println("RECEIVED: " + sentence);
+					InetAddress IPAddress = receivePacket.getAddress();
+					sendData = sentence.getBytes();
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+					serverSocket.send(sendPacket);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("THis is fucking hopeless. Please kill yourself.");
