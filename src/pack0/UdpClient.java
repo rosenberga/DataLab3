@@ -19,6 +19,7 @@ public class UdpClient {
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, Integer.parseInt(portS));
 			clientSocket.send(sendPacket);
 			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+			clientSocket.receive(receivePacket);
 			System.out.println(new String(receivePacket.getData(), "UTF-8"));
 			clientSocket.close();
 		} catch (Exception e) {
