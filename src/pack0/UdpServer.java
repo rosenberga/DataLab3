@@ -34,7 +34,6 @@ public class UdpServer {
 					sendData = sentence.getBytes();
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
 					serverSocket.send(sendPacket);
-					System.out.println(new String(sendPacket.getData(),"UTF-8"));
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("THis is fucking hopeless. Please kill yourself.");
