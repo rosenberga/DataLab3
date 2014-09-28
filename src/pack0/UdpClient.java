@@ -20,7 +20,12 @@ public class UdpClient {
 			clientSocket.send(sendPacket);
 			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 			clientSocket.receive(receivePacket);
+<<<<<<< HEAD
 			System.out.println(new String(receivePacket.getData(), "UTF-8"));
+=======
+			String acheivementGet = new String(receivePacket.getData());
+			System.out.println("FROM SERVER:" + acheivementGet);
+>>>>>>> origin/master
 			clientSocket.close();
 		} catch (Exception e) {
 			e.printStackTrace();
