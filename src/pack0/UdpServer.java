@@ -5,8 +5,7 @@ import java.net.*;
 
 public class UdpServer {
 	public static void main(String[] args){
-		System.out.println("START!");
-		DatagramSocket serverSocket;
+		DatagramSocket serverSocket = null;
 		int port;
 		
 		InetAddress hostAddress;
@@ -20,18 +19,19 @@ public class UdpServer {
 		
 		try {
 			port = Integer.parseInt(args[0]);
-			serverSocket = new DatagramSocket(port);
-			byte[] receiveData = new byte[1024];
-			byte[] sendData = new byte[1024];
+			serverSocket = new DatagramSocket(9876);
 		
 			while(true){
+				byte[] receiveData = new byte[1024];
+				byte[] sendData = new byte[1024];
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				try {
 					serverSocket.receive(receivePacket);
 					String sentence = new String(receivePacket.getData());
 					System.out.println("RECEIVED: " + sentence);
 					InetAddress IPAddress = receivePacket.getAddress();
-					sendData = sentence.getBytes();
+					String newMessage = sentence +"\n";
+					sendData = newMessage.getBytes();
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
 					serverSocket.send(sendPacket);
 				} catch (IOException e) {
@@ -42,6 +42,10 @@ public class UdpServer {
 		} catch (SocketException e) {
 			System.out.println("Could not do shit, that makes me angry. DIE!");
 			e.printStackTrace();
+		} finally{
+			if(serverSocket != null) {
+				serverSocket.close();
+			}
 		}
 	}
 }
