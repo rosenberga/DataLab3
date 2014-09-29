@@ -21,9 +21,11 @@ public class UdpClient {
 				byte[] receiveData = new byte[1024];
 				System.out.print("Enter a message ");
 				String data = inFromUser.readLine();
-				if(data.equalsIgnoreCase("quit")) {
+				if (data.equalsIgnoreCase("quit")) {
 					clientSocket.close();
 					break;
+				} else {
+					data = data + "\n";
 				}
 				sendData = data.getBytes();
 				DatagramPacket sendPacket = new DatagramPacket(sendData,
@@ -31,10 +33,15 @@ public class UdpClient {
 				clientSocket.send(sendPacket);
 				DatagramPacket receivePacket = new DatagramPacket(receiveData,
 						receiveData.length);
-				clientSocket.receive(receivePacket);
-				String message = new String(receivePacket.getData());
-				System.out.println("FROM SERVER:" + message);
-				clientSocket.close();
+				try {
+					clientSocket.receive(receivePacket);
+					String message = new String(receivePacket.getData());
+					System.out.println("FROM SERVER:" + message);
+				} catch (Exception e) {
+					e.printStackTrace();
+				} finally {
+					clientSocket.close();
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

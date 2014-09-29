@@ -6,9 +6,11 @@ import java.net.*;
 public class UdpServer {
 	private int port;
 	private DatagramSocket serverSocket;
-	public static void main(String[] args){
+
+	public static void main(String[] args) {
 		new UdpServer();
-	}	
+	}
+
 	public UdpServer() {
 		InetAddress hostAddress;
 		try {
@@ -22,8 +24,6 @@ public class UdpServer {
 		try {
 			port = 9876;
 			serverSocket = new DatagramSocket(port);
-		
-			while(true){
 				byte[] receiveData = new byte[1024];
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				try {
@@ -33,21 +33,26 @@ public class UdpServer {
 						if(serverSocket != null) {
 							serverSocket.close();
 						}
-						break;
 					}
 					System.out.println("RECEIVED: " + sentence);
-					Dig d = new Dig(sentence, receivePacket.getAddress());
-					d.run();
+					InetAddress retA = receivePacket.getAddress();
+					Dig d = new Dig(sentence, retA, receivePacket.getPort());
+					d.start();
+					sentence = "";
+					while(sentence.equals("")) {
+						serverSocket.receive(receivePacket);
+						sentence = new String(receivePacket.getData());
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("IOException");
 				}
-			}
 		} catch (SocketException e) {
 			System.out.println("Socket Exception");
 			e.printStackTrace();
 		}
 	}
+
 	private class Dig extends Thread {
 		private String request;
 		private String command;
@@ -56,37 +61,45 @@ public class UdpServer {
 		private String result;
 		private InetAddress ip;
 		private byte[] sendData;
-		
-		public Dig(String r, InetAddress ipA) {
+		private int portD;
+
+		public Dig(String r, InetAddress ipA, int portDigIn) {
 			request = r;
 			char[] chars = request.toCharArray();
 			command = "dig ";
-			for(int i = 0; i < chars.length; i++){
+			for (int i = 0; i < chars.length; i++) {
 				char c = chars[i];
-				if(c != '\0') {
+				if (c != '\0') {
 					command = command + c;
 				}
 			}
-			
+
 			sendData = new byte[1024];
 			ip = ipA;
+			portD = portDigIn;
 		}
-		
+
 		public void run() {
-			try{
+			try {
 				Process p = Runtime.getRuntime().exec(command);
 				p.waitFor();
-				reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				reader = new BufferedReader(new InputStreamReader(
+						p.getInputStream()));
 				String line = "";
 				sb = new StringBuilder();
-				while((line = reader.readLine()) != null) {
-					sb.append(line +"\n");
+				while ((line = reader.readLine()) != null) {
+					sb.append(line + "\n");
 				}
 				result = sb.toString();
 				sendData = result.getBytes();
-				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, ip, port);
+				String ips = ip.toString().substring(1);
+				ip = InetAddress.getByName(ips);
+				System.out.println(ips);
+				DatagramPacket sendPacket = new DatagramPacket(sendData,
+						sendData.length, ip, port);
+				System.out.println(new String(sendPacket.getData()));
 				serverSocket.send(sendPacket);
-			} catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
 				if (reader != null) {
