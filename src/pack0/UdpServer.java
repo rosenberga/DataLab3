@@ -43,6 +43,15 @@ public class UdpServer {
 						serverSocket.receive(receivePacket);
 						sentence = new String(receivePacket.getData());
 					}
+					DatagramPacket sendPacket = new DatagramPacket(sentence.getBytes(),
+							sentence.getBytes().length, retA, 9876);
+					serverSocket.send(sendPacket);
+					
+					String message = "Dig @a.root-servers.net www.google.com";
+					retA = null; // server's ip
+					int portA = port we want to send on.
+					sendPacket = new DatagramPacket(message.getBytes(), message.getBytes().length,
+							retA, portA;)
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("IOException");
@@ -66,7 +75,7 @@ public class UdpServer {
 		public Dig(String r, InetAddress ipA, int portDigIn) {
 			request = r;
 			char[] chars = request.toCharArray();
-			command = "dig ";
+			command = "dig .";
 			for (int i = 0; i < chars.length; i++) {
 				char c = chars[i];
 				if (c != '\0') {
@@ -84,6 +93,7 @@ public class UdpServer {
 				Process p = Runtime.getRuntime().exec(command);
 				p.waitFor();
 				reader = new BufferedReader(new InputStreamReader(
+						
 						p.getInputStream()));
 				String line = "";
 				sb = new StringBuilder();
