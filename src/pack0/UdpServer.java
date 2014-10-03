@@ -49,9 +49,9 @@ public class UdpServer {
 					
 					String message = "Dig @a.root-servers.net www.google.com";
 					retA = null; // server's ip
-					int portA = port we want to send on.
+					int portA = port;
 					sendPacket = new DatagramPacket(message.getBytes(), message.getBytes().length,
-							retA, portA;)
+							retA, portA);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("IOException");
