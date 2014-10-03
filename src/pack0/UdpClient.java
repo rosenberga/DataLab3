@@ -7,19 +7,15 @@ public class UdpClient {
 	public static void main(String[] args) {
 		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(
 				System.in));
-		String ip;
 		try {
-			System.out.print("Enter ip address: ");
-			ip = inFromUser.readLine();
 			System.out.print("Enter port ");
 			String portS = inFromUser.readLine();
 			while (true) {
 				DatagramSocket clientSocket = new DatagramSocket();
 				clientSocket.setSoTimeout(9000);
-				InetAddress IPAddress = InetAddress.getByName(ip);
 				byte[] sendData = new byte[1024];
 				byte[] receiveData = new byte[1024];
-				System.out.print("Enter a message ");
+				System.out.print("Enter a website: ");
 				String data = inFromUser.readLine();
 				if (data.equalsIgnoreCase("quit")) {
 					clientSocket.close();
@@ -29,7 +25,7 @@ public class UdpClient {
 				}
 				sendData = data.getBytes();
 				DatagramPacket sendPacket = new DatagramPacket(sendData,
-						sendData.length, IPAddress, Integer.parseInt(portS));
+						sendData.length, Integer.parseInt(portS));
 				clientSocket.send(sendPacket);
 				DatagramPacket receivePacket = new DatagramPacket(receiveData,
 						receiveData.length);
