@@ -1,6 +1,5 @@
-package pack0;
+package old;
 
-import java.io.*;
 import java.net.*;
 
 class UdpServer{
@@ -19,6 +18,7 @@ class UdpServer{
 	    sendData = newMessage.getBytes();
 	    DatagramPacket sendPacket = new DatagramPacket(sendData,sendData.length,IPAddress,port);
 	    serverSocket.send(sendPacket);
+	    serverSocket.close();
 	}
     }
 }

@@ -30,8 +30,16 @@ public class DnsResolver {
 		
 		// wait to receive a packet
 		serverSocket.receive(receivePacket);
+		
+		handlePacket(receivePacket);
+		
+		// close the server socket
+		serverSocket.close();
 	}
 	
+	private void handlePacket(DatagramPacket receivePacket) {
+		// unset the recursion desired bit
+	}
 	private void readRootFile() throws IOException {
 		String line;
 		Map<String, Cache> root = new HashMap<String, Cache>();
