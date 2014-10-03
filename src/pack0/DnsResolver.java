@@ -23,7 +23,6 @@ public class DnsResolver {
 		this.port = Integer.parseInt(port);
 		serverCache = new HashMap<String, Map<String,Cache>>();
 		readRootFile();
-		
 		// set up server socket and receive packet
 		serverSocket = new DatagramSocket(this.port);
 		byte[] receiveData = new byte[1024];
