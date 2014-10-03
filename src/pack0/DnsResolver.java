@@ -30,7 +30,6 @@ public class DnsResolver {
 		
 		// wait to receive a packet
 		serverSocket.receive(receivePacket);
-		
 	}
 	
 	private void readRootFile() throws IOException {
@@ -46,7 +45,7 @@ public class DnsResolver {
 					String[] parts = line.split("%");
 					int time = Integer.parseInt(parts[1]);
 					String name = parts[0];
-					String ip = parts[2];
+					String ip = parts[3];
 					Cache c = new Cache(time,ip,name);
 					root.put(name, c);
 				}
