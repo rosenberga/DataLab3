@@ -4,11 +4,17 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.apache.commons.codec.binary.Hex;
+
 public class DnsResolver {
 	private int port;
 	private static final String rootServerFile = "RootFile.txt";
 	private Map<String, Map<String, Cache>> serverCache;
 	private DatagramSocket serverSocket;
+	private Cache serverToAsk;
+	private byte[] serverData;
+	private String askedSite;
+	private String finalIp;
 
 	public static void main(String[] args) {
 		try {
@@ -39,15 +45,17 @@ public class DnsResolver {
 				// flip the recursive bit
 				receivePacket.setData(flipRec(receivePacket));
 
+				// serverToAsk will be assigned to
+				// the best server to ask the question
+				serverToAsk = null;
+
 				// check to see if we have cached the value before
 				if (!inCache(receivePacket)) {
-					askServer(receivePacket);
+					finalIp = askServer(receivePacket, serverToAsk);
 				}
 
 				// TODO
 				// send to user
-				// need to flip the bytes again to 80 before you send the
-				// response back to dig
 
 			}
 		} catch (Exception e) {
@@ -57,13 +65,67 @@ public class DnsResolver {
 		}
 	}
 
-	private void askServer(DatagramPacket receivePacket) {
+	private String askServer(DatagramPacket receivePacket, Cache server) {
 		// TODO Auto-generated method stub
-
+		// if you have to ask more than one server, then
+		// call their function recursively
+		return null;
 	}
 
 	private boolean inCache(DatagramPacket receivePacket) {
-		// TODO Auto-generated method stub
+
+		// declare variables needed
+		byte[] data = receivePacket.getData();
+		char[] hexC = Hex.encodeHex(data);
+		int index = 24;
+		String site = "";
+
+		// loop through hexC getting values for the site
+		// break when there are no more values to get
+		do {
+			String hexS = hexC[index] + "" + hexC[index++];
+			Long next = Long.parseLong(hexS, 16);
+			if(next == 0) {
+				break;
+			}
+			for (int i = 0; i < next; i++) {
+				String h = hexC[index++] + "" + hexC[index++];
+				site += hexToASCII(h);
+			}
+			site += ".";
+		} while (true);
+		
+		site = site.substring(0,site.length()-1);
+		askedSite = site;
+		
+		String[] siteParts = site.split("\\.");
+		int times = 0;
+		
+		while(true) {
+			
+			// build the check string
+			String check = "";
+			for(int i = times; i >= 0 && siteParts.length-1-i>=0; i--) {
+				check += siteParts[siteParts.length-1-i]+".";
+			}
+			
+			if(serverCache.containsKey(check.toUpperCase())) {
+				times++;
+				serverToAsk = serverCache.get(check).get(check);
+				if(times == siteParts.length)  {
+					finalIp = serverToAsk.getIpAddress();
+					return true;
+				}
+			} else {
+				// make sure that it is at least set to root
+				if (serverToAsk == null) {
+					Map<String, Cache> roots = serverCache.get("ROOT");
+					String[] keys = roots.keySet().toArray(new String[0]);
+					serverToAsk = roots.get(keys[0]);
+				}
+				break;
+			}
+		}
 		return false;
 	}
 
@@ -72,7 +134,6 @@ public class DnsResolver {
 		byte[] flip = receivePacket.getData();
 		flip[2] = 0;
 		return flip;
-
 	}
 
 	private void readRootFile() throws IOException {
@@ -90,12 +151,21 @@ public class DnsResolver {
 					String name = parts[0];
 					String ip = parts[3];
 					Cache c = new Cache(time, ip, name);
-					root.put(name, c);
+					root.put(name.toUpperCase(), c);
 				}
 			}
 		}
 		br.close();
 
-		serverCache.put("root", root);
+		serverCache.put("ROOT", root);
+	}
+
+	private String hexToASCII(String hexValue) {
+		StringBuilder output = new StringBuilder("");
+		for (int i = 0; i < hexValue.length(); i += 2) {
+			String str = hexValue.substring(i, i + 2);
+			output.append((char) Integer.parseInt(str, 16));
+		}
+		return output.toString();
 	}
 }
