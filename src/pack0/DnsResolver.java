@@ -26,19 +26,37 @@ public class DnsResolver {
 		// set up server socket and receive packet
 		serverSocket = new DatagramSocket(this.port);
 		byte[] receiveData = new byte[1024];
+		
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		
 		// wait to receive a packet
+		System.out.println("Waiting for client to connect");
 		serverSocket.receive(receivePacket);
 		
-		handlePacket(receivePacket);
+		// flip the recursive bit
+		receivePacket.setData(flipRec(receivePacket));
+		
+		// check to see if we have cached the value before
+		if(inCache(receivePacket)) {
+			
+		} else {
+			
+		}
 		
 		// close the server socket
 		serverSocket.close();
 	}
 	
-	private void handlePacket(DatagramPacket receivePacket) {
-		// unset the recursion desired bit
+	private boolean inCache(DatagramPacket receivePacket) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	private byte[] flipRec(DatagramPacket receivePacket) {
+		// set the recursion desired bit to 0
+		byte[] flip = receivePacket.getData();
+		flip[2] = 0;
+		return flip;
+		
 	}
 	private void readRootFile() throws IOException {
 		String line;
