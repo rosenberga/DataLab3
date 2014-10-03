@@ -54,7 +54,6 @@ public class DnsResolver {
 					finalIp = askServer(receivePacket, serverToAsk);
 				}
 
-				// TODO
 				// send to user
 
 			}
@@ -107,7 +106,8 @@ public class DnsResolver {
 			String check = "";
 			for(int i = times; i >= 0 && siteParts.length-1-i>=0; i--) {
 				check += siteParts[siteParts.length-1-i]+".";
-			}
+			} 
+			check.substring(0,check.length()-1);
 			
 			if(serverCache.containsKey(check.toUpperCase())) {
 				times++;
