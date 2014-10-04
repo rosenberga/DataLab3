@@ -48,7 +48,7 @@ public class DnsResolver {
 				// serverToAsk will be assigned to
 				// the best server to ask the question
 				serverToAsk = null;
-
+				
 				// check to see if we have cached the value before
 				if (!inCache(receivePacket)) {
 					finalIp = askServer(receivePacket, serverToAsk);
@@ -65,39 +65,70 @@ public class DnsResolver {
 		}
 	}
 
-	private String askServer(DatagramPacket receivePacket, Cache server) {
-		// TODO Auto-generated method stub
+	private String askServer(DatagramPacket receivePacket, Cache server) throws UnknownHostException {
 		// if you have to ask more than one server, then
 		// call their function recursively
+		byte[] sendData = new byte[1024];
+		byte[] receiveData = new byte[1024];
+	
+		System.out.println(serverToAsk.getIpAddress());
+		sendData = receivePacket.getData();
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(serverToAsk.getIpAddress()),53);
+		
+		System.out.println("send: "+sendPacket.getData());
+		
+		try {
+			serverSocket.send(sendPacket);
+		} catch (IOException e) {
+			System.out.println("Couldn't Send");
+			e.printStackTrace();
+		}
+
+		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length, InetAddress.getByName(serverToAsk.getIpAddress()), 53);	
+		try{
+			serverSocket.receive(fromServerToAsk);
+		} catch (IOException e) {
+			System.out.println("Couldn't Receive");
+			e.printStackTrace();
+		}
+		
+		/**TODO Need to figure out how to get DNS Response here. 
+		 * We can parse the ip from it, and basically re-run the code on what is returned. 
+		 * Find a way to check if the returned ip is the ip of the web-address. 
+		 * If it is, end recursion, and the project should be done. 
+		 */
+		
 		return null;
 	}
 
 	private boolean inCache(DatagramPacket receivePacket) {
-
 		// declare variables needed
 		byte[] data = receivePacket.getData();
 		char[] hexC = Hex.encodeHex(data);
+		
 		int index = 24;
 		String site = "";
-
+for(int k = 0; k < data.length; k++){
+	System.out.print(hexC[k]);
+}
 		// loop through hexC getting values for the site
 		// break when there are no more values to get
 		do {
-			String hexS = hexC[index] + "" + hexC[index++];
+			String hexS = hexC[index++] + "" + hexC[index++];
 			Long next = Long.parseLong(hexS, 16);
 			if(next == 0) {
 				break;
 			}
 			for (int i = 0; i < next; i++) {
 				String h = hexC[index++] + "" + hexC[index++];
+				
 				site += hexToASCII(h);
 			}
 			site += ".";
-		} while (true);
-		
+		} while (true);	
 		site = site.substring(0,site.length()-1);
 		askedSite = site;
-		
+
 		String[] siteParts = site.split("\\.");
 		int times = 0;
 		
