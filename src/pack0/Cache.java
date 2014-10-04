@@ -4,6 +4,7 @@ public class Cache {
 	private int timeToLive;
 	private String ipAddress;
 	private String name;
+	private byte[] data;
 	public Cache(int timeToLive, String ipAddress, String name) {
 		super();
 		this.timeToLive = timeToLive;
@@ -28,4 +29,19 @@ public class Cache {
 	public void setName(String name) {
 		this.name = name;
 	}
+	public byte[] getData() {
+		return data;
+	}
+	public void setData(byte[] data) {
+		this.data = data;
+	}
+	public Cache(int timeToLive, String ipAddress, String name, byte[] data) {
+		super();
+		this.timeToLive = timeToLive;
+		this.ipAddress = ipAddress;
+		this.name = name;
+		this.data = data;
+	}
+	
+	
 }

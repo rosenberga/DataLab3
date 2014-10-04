@@ -53,8 +53,9 @@ public class DnsResolver {
 				if (!inCache(receivePacket)) {
 					finalIp = askServer(receivePacket, serverToAsk);
 				}
-
 				// send to user
+				// check cache for data packet of right ip
+				// send that data packet back to the user
 
 			}
 		} catch (Exception e) {
