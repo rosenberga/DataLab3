@@ -59,9 +59,6 @@ public class DnsResolver {
 				}
 				
 				// send to user
-
-				// TODO have a thread that print out basic info on cache
-				// each time we update cache
 			}
 		} catch (Exception e) {
 			// close the server socket
@@ -100,25 +97,19 @@ public class DnsResolver {
 		}
 		
 		boolean answer = decodeMessage(fromServerToAsk);
-		cacheMessage(fromServerToAsk);
 		
 		if(answer) {
 			// we have our answer, send it back to user
 			return serverToAsk.getIpAddress();
 		} else {
 			// we do not have our answer, send packet to next server
+			// but change the packet so it has the right info
 			return askServer(receivePacket, serverToAsk);
 		}
 	}
 
-	private void cacheMessage(DatagramPacket fromServerToAsk) {
-		// TODO Auto-generated method stub
-		
-	}
-
 	private boolean decodeMessage(DatagramPacket data) {
 		// TODO Auto-generated method stub
-		System.out.print("here");
 		char[] c = Hex.encodeHex(data.getData());
 		int index = 0;
 		
@@ -145,6 +136,7 @@ public class DnsResolver {
 		
 		String qType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String qClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		int beforeAuth = index;
 		
 		// read through answers
 		if (Long.parseLong(answerRRs, 16) > 0) {
@@ -152,7 +144,10 @@ public class DnsResolver {
 			// make it serverToAsk
 			return true;
 		} else {
-			// read through auth
+			// read through authoritative section
+			
+			// get name so we can put it into the map
+			String name = "";
 			Long auth = ((Long.parseLong(authRRS, 16) * 2) -1);
 			int count = 0;
 			while(count < auth) {
@@ -160,10 +155,56 @@ public class DnsResolver {
 				if(bits.equals("c0")) {
 					count++;
 				}
+				if (count == 1) {
+					String point = c[index++] + ""+ c[index++];
+					int pointIndex = 2 * (int)Long.parseLong(point, 16);
+					int next = Integer.parseInt(c[pointIndex++] + "" + c[pointIndex++]);
+					for (int i = 0; i < next; i++) {
+						String h = c[pointIndex++] + "" + c[pointIndex++];
+						name += hexToASCII(h);
+					}
+				}
 			}
-			// read through addit
+			index++;
+			index++;
 			
 			// find first addition, make it our serverToAsk
+			String addition = "";
+			count = 0;
+			while (count < 3) {
+				String bits = c[index++] + ""+ c[index++];
+				if(bits.equals("c0")) {
+					count++;
+				}
+				if (count < 3) {
+					addition += bits;
+				}
+			}
+			
+			String nP = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String aType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String aClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String ttl = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++] + 
+					"" + c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String dataLength = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			int len = (int)Long.parseLong(dataLength, 16);
+			String aIP = "";
+			for(int i = 0; i < len; i++) {
+				String hex = c[index++] + ""+ c[index++];
+				int value = (int)Long.parseLong(hex, 16);
+				aIP += value;
+				if(i+1 != len) {
+					aIP += '.'+"";
+				}
+			}
+			
+			// parse it and gets it info
+			// make a cache object out of it
+			// put it into cache
+			// and set it as our server to ask
+			// TODO have a thread that print out basic info on cache
+			// each time we update cache
+			
 			return false;
 		}
 	}
@@ -209,7 +250,11 @@ public class DnsResolver {
 			
 			if(serverCache.containsKey(check.toUpperCase())) {
 				times++;
-				serverToAsk = serverCache.get(check).get(check);
+				
+				Map<String, Cache> roots = serverCache.get(check);
+				String[] keys = roots.keySet().toArray(new String[0]);
+				serverToAsk = roots.get(keys[0]);
+				
 				if(times == siteParts.length)  {
 					finalIp = serverToAsk.getIpAddress();
 					answer = serverToAsk;
