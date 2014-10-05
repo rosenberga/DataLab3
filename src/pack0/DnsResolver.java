@@ -4,8 +4,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.apache.commons.codec.binary.Hex;
 
 public class DnsResolver {
@@ -59,9 +57,12 @@ public class DnsResolver {
 				}
 				
 				// send to user
+				byte[] toSend = answer.getDetails().getBytes();
+				DatagramPacket sendPacket = new DatagramPacket(toSend, toSend.length, receivePacket.getAddress(),receivePacket.getPort());
+				serverSocket.send(sendPacket);
 			}
 		} catch (Exception e) {
-			// close the server socket
+			e.printStackTrace();
 			serverSocket.close();
 			return;
 		}
@@ -103,6 +104,7 @@ public class DnsResolver {
 		} else {
 			// we do not have our answer, send packet to next server
 			// but change the packet so it has the right info
+			// TODO
 			return askServer(receivePacket, serverToAsk);
 		}
 	}
@@ -139,8 +141,84 @@ public class DnsResolver {
 		
 		// read through answers
 		if (Long.parseLong(answerRRs, 16) > 0) {
-			// grab the info
-			// make it serverToAsk
+			String name = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String aType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String aClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			String aTime = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++] 
+						+ "" +c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			int timeToLive = (int)Long.parseLong(aTime,16);
+			String aLen = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			int len = (int)Long.parseLong(aLen, 16);
+			String aIP = "";
+			for(int i = 0; i < len; i++) {
+				String hex = c[index++] + ""+ c[index++];
+				int value = (int)Long.parseLong(hex, 16);
+				aIP += value;
+				if(i+1 != len) {
+					aIP += '.'+"";
+				}
+			}
+			
+			int pIndex = (int) Long.parseLong(name.substring(2),16) * 2;
+			String aName = "";
+			do {
+				String hexS = c[index++] + "" + c[index++];
+				Long next = Long.parseLong(hexS, 16);
+				if(next == 0) {
+					break;
+				}
+				for (int i = 0; i < next; i++) {
+					String h = c[index++] + "" + c[index++];
+					
+					aName += hexToASCII(h);
+				}
+				aName += ".";
+			} while (true);	
+			aName = aName.substring(0, aName.length()-1);
+			
+			Cache c1 = new Cache (timeToLive,aIP,aName,data.getData());
+			answer = c1;
+			
+			// find the name to put into cache
+			// put this into cache
+			String cName = "";
+			
+			int count = 0;
+			int times = (int)Long.parseLong(answerRRs, 16);
+			while(count < times) {
+				String bits = c[index++] + ""+ c[index++];
+				if(bits.equals("c0")) {
+					count++;
+				}
+			}
+			String point = c[index++]+""+c[index++];
+			int pI = (int) Long.parseLong(point,16) * 2;
+			
+			do {
+				String hexS = c[pI++] + "" + c[pI++];
+				Long next = Long.parseLong(hexS, 16);
+				if(next == 0) {
+					break;
+				}
+				for (int i = 0; i < next; i++) {
+					String h = c[pI++] + "" + c[pI++];
+					
+					cName += hexToASCII(h);
+				}
+				cName += ".";
+			} while (true);	
+			cName = cName.substring(0, cName.length()-1);
+			
+			if(serverCache.containsKey(cName.toUpperCase())) {
+				Map<String, Cache> map = serverCache.get(cName.toUpperCase());
+				map.put(aName.toUpperCase(), c1);
+				serverCache.put(cName.toUpperCase(), map);
+			} else {
+				HashMap<String, Cache> map = new HashMap<String, Cache>();
+				map.put(aName.toUpperCase(), c1);
+				serverCache.put(cName.toUpperCase(), map);
+			}
+			
 			return true;
 		} else {
 			// read through authoritative section
