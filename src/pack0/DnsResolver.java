@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.commons.codec.binary.Hex;
 
 public class DnsResolver {
@@ -53,6 +55,7 @@ public class DnsResolver {
 				if (!inCache(receivePacket)) {
 					finalIp = askServer(receivePacket, serverToAsk);
 				}
+				
 				// send to user
 				// check cache for data packet of right ip
 				// send that data packet back to the user
@@ -73,9 +76,7 @@ public class DnsResolver {
 	
 		System.out.println(serverToAsk.getIpAddress());
 		sendData = receivePacket.getData();
-		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(serverToAsk.getIpAddress()),53);
-		
-		System.out.println("send: "+sendPacket.getData());
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(server.getIpAddress()),53);
 		
 		try {
 			serverSocket.send(sendPacket);
@@ -91,14 +92,29 @@ public class DnsResolver {
 			System.out.println("Couldn't Receive");
 			e.printStackTrace();
 		}
+
+		String result = parseIPFromResponse(fromServerToAsk);
 		
-		/**TODO Need to figure out how to get DNS Response here. 
-		 * We can parse the ip from it, and basically re-run the code on what is returned. 
-		 * Find a way to check if the returned ip is the ip of the web-address. 
-		 * If it is, end recursion, and the project should be done. 
-		 */
+		return result;
+	}
+
+	/** Parse the IP Address returned from the DNS Response **/
+	private String parseIPFromResponse(DatagramPacket receivePacket) throws UnknownHostException{
+		byte[] data = receivePacket.getData();
+		char[] hexC = Hex.encodeHex(data);
 		
-		return null;
+		//May need to set this up so the value isn't hard coded, may not be the same everytime...I don't know. 
+		int index = 536;
+		String temp = "";
+		
+		//Get the relevant hex values to parse the IP from
+		for(int i = 0; i < 8; i++){
+			temp += hexC[index+i];
+		}
+
+		InetAddress result = InetAddress.getByAddress(DatatypeConverter.parseHexBinary(temp));
+	
+		return result.toString();
 	}
 
 	private boolean inCache(DatagramPacket receivePacket) {
@@ -108,9 +124,7 @@ public class DnsResolver {
 		
 		int index = 24;
 		String site = "";
-for(int k = 0; k < data.length; k++){
-	System.out.print(hexC[k]);
-}
+
 		// loop through hexC getting values for the site
 		// break when there are no more values to get
 		do {
