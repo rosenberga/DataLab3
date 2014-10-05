@@ -235,7 +235,7 @@ public class DnsResolver {
 				if (count == 1) {
 					String point = c[index++] + ""+ c[index++];
 					int pointIndex = 2 * (int)Long.parseLong(point, 16);
-					int next = Integer.parseInt(c[pointIndex++] + "" + c[pointIndex++]);
+					int next = (int) Long.parseLong(c[pointIndex++] + "" + c[pointIndex++], 16);
 					for (int i = 0; i < next; i++) {
 						String h = c[pointIndex++] + "" + c[pointIndex++];
 						name += hexToASCII(h);
