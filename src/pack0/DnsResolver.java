@@ -104,10 +104,11 @@ public class DnsResolver {
 		
 		if(answer) {
 			// we have our answer, send it back to user
+			return serverToAsk.getIpAddress();
 		} else {
 			// we do not have our answer, send packet to next server
-		}	
-		return null;
+			return askServer(receivePacket, serverToAsk);
+		}
 	}
 
 	private void cacheMessage(DatagramPacket fromServerToAsk) {
@@ -115,31 +116,57 @@ public class DnsResolver {
 		
 	}
 
-	private boolean decodeMessage(DatagramPacket fromServerToAsk) {
+	private boolean decodeMessage(DatagramPacket data) {
 		// TODO Auto-generated method stub
-		return false;
-	}
-
-	/** Parse the IP Address returned from the DNS Response **/
-	/*
-	private String parseIPFromResponse(DatagramPacket receivePacket) throws UnknownHostException{
-		byte[] data = receivePacket.getData();
-		char[] hexC = Hex.encodeHex(data);
+		System.out.print("here");
+		char[] c = Hex.encodeHex(data.getData());
+		int index = 0;
 		
-		//May need to set this up so the value isn't hard coded, may not be the same every time...I don't know. 
-		int index = 536;
-		String temp = "";
+		// read through flags
+		String transId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String flagsId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String questRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String answerRRs = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String authRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String additRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		
-		//Get the relevant hex values to parse the IP from
-		for(int i = 0; i < 8; i++){
-			temp += hexC[index+i];
+		// read through questions
+		do {
+			String hexS = c[index++] + "" + c[index++];
+			Long next = Long.parseLong(hexS, 16);
+			if(next == 0) {
+				break;
+			}
+			for (int i = 0; i < next; i++) {
+				index++;
+				index++;
+			}
+		} while (true);	
+		
+		String qType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		String qClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		
+		// read through answers
+		if (Long.parseLong(answerRRs, 16) > 0) {
+			// grab the info
+			// make it serverToAsk
+			return true;
+		} else {
+			// read through auth
+			Long auth = ((Long.parseLong(authRRS, 16) * 2) -1);
+			int count = 0;
+			while(count < auth) {
+				String bits = c[index++] + ""+ c[index++];
+				if(bits.equals("c0")) {
+					count++;
+				}
+			}
+			// read through addit
+			
+			// find first addition, make it our serverToAsk
+			return false;
 		}
-
-		InetAddress result = InetAddress.getByAddress(DatatypeConverter.parseHexBinary(temp));
-	
-		return result.toString();
 	}
-	*/
 
 	private boolean inCache(DatagramPacket receivePacket) {
 		// declare variables needed

@@ -42,6 +42,11 @@ public class Cache {
 		this.name = name;
 		this.data = data;
 	}
+	public String getDetails() {
+		return "Server Name: " + name +"\n"
+				+"ipAddress: " +ipAddress+"\n"
+				+"Time To Live: "+timeToLive+"\n";
+	}
 	
 	
 }
