@@ -18,6 +18,7 @@ public class DnsResolver {
 	private String askedSite;
 	private String finalIp;
 	private Cache answer;
+	private printCache pc;
 
 	public static void main(String[] args) {
 		try {
@@ -59,7 +60,8 @@ public class DnsResolver {
 				
 				// send to user
 
-
+				// TODO have a thread that print out basic info on cache
+				// each time we update cache
 			}
 		} catch (Exception e) {
 			// close the server socket
@@ -228,6 +230,9 @@ public class DnsResolver {
 		br.close();
 
 		serverCache.put("ROOT", root);
+		
+		pc = new printCache(serverCache);
+		pc.start();
 	}
 
 	private String hexToASCII(String hexValue) {
@@ -237,5 +242,17 @@ public class DnsResolver {
 			output.append((char) Integer.parseInt(str, 16));
 		}
 		return output.toString();
+	}
+	
+	private class printCache extends Thread {
+		private Map<String, Map<String, Cache>> currentCache;
+		private String fileName;
+		public printCache(Map<String, Map<String,Cache>> cache) {
+			currentCache = cache;
+			fileName = "CurrentCache.txt";
+		}
+		public void run() {
+			
+		}
 	}
 }
