@@ -87,7 +87,7 @@ public class DnsResolver {
 			e.printStackTrace();
 		}
 
-		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length);	
+		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length,InetAddress.getByName(server.getIpAddress()),53);	
 		try{
 			serverSocket.receive(fromServerToAsk);
 			// TODO
@@ -114,14 +114,27 @@ public class DnsResolver {
 		char[] c = Hex.encodeHex(data.getData());
 		int index = 0;
 		
+		
+		for(int i = 0; i < c.length; i++) {
+			System.out.print(c[i] + "");
+			if((i+1)%2==0) {
+				System.out.print(" ");
+			}
+			if((i+1)%36 == 0) {
+				System.out.println("");
+			}
+		}
+		
 		// read through flags
 		String transId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String flagsId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String questRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String answerRRs = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String authRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
-		String additRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		
+		String additRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+		//System.out.println(transId + " " + flagsId);
+		//System.out.println(questRRS + " " + answerRRs + " " + authRRS + " " + additRRS);
 		// read through questions
 		do {
 			String hexS = c[index++] + "" + c[index++];
@@ -134,6 +147,8 @@ public class DnsResolver {
 				index++;
 			}
 		} while (true);	
+		
+		//System.out.println("After Question:" + index+"");
 		
 		String qType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String qClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
@@ -244,6 +259,8 @@ public class DnsResolver {
 			}
 			index++;
 			index++;
+			
+			//System.out.println("After Auth:" + index+"");
 			
 			// find first addition, make it our serverToAsk
 			String addition = "";
