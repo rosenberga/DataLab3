@@ -99,7 +99,6 @@ public class DnsResolver {
 		boolean answer = decodeMessage(fromServerToAsk);
 		
 		if(answer) {
-			// we have our answer, send it back to user
 			return serverToAsk.getIpAddress();
 		} else {
 			// we do not have our answer, send packet to next server
@@ -186,6 +185,7 @@ public class DnsResolver {
 			String aClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			String ttl = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++] + 
 					"" + c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			int timeToLive = (int)Long.parseLong(ttl,16);
 			String dataLength = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			int len = (int)Long.parseLong(dataLength, 16);
 			String aIP = "";
@@ -197,13 +197,36 @@ public class DnsResolver {
 					aIP += '.'+"";
 				}
 			}
+			int pIndex = (int) Long.parseLong(nP.substring(2),16) * 2;
+			String aName = "";
+			do {
+				String hexS = c[index++] + "" + c[index++];
+				Long next = Long.parseLong(hexS, 16);
+				if(next == 0) {
+					break;
+				}
+				for (int i = 0; i < next; i++) {
+					String h = c[index++] + "" + c[index++];
+					
+					aName += hexToASCII(h);
+				}
+				aName += ".";
+			} while (true);	
+			aName = aName.substring(0, aName.length()-1);
+			Cache c1 = new Cache(timeToLive, aIP, aName, data.getData());
 			
-			// parse it and gets it info
-			// make a cache object out of it
-			// put it into cache
-			// and set it as our server to ask
-			// TODO have a thread that print out basic info on cache
-			// each time we update cache
+			if(serverCache.containsKey(name.toUpperCase())) {
+				Map<String, Cache> map = serverCache.get(name.toUpperCase());
+				map.put(aName.toUpperCase(), c1);
+				serverCache.put(name.toUpperCase(), map);
+			} else {
+				HashMap<String, Cache> map = new HashMap<String, Cache>();
+				map.put(aName.toUpperCase(), c1);
+				serverCache.put(name.toUpperCase(), map);
+			}
+			pc = new printCache(serverCache);
+			pc.start();
+			serverToAsk = c1;
 			
 			return false;
 		}
