@@ -17,6 +17,7 @@ public class DnsResolver {
 	private byte[] serverData;
 	private String askedSite;
 	private String finalIp;
+	private Cache answer;
 
 	public static void main(String[] args) {
 		try {
@@ -57,8 +58,7 @@ public class DnsResolver {
 				}
 				
 				// send to user
-				// check cache for data packet of right ip
-				// send that data packet back to the user
+
 
 			}
 		} catch (Exception e) {
@@ -80,30 +80,51 @@ public class DnsResolver {
 		
 		try {
 			serverSocket.send(sendPacket);
+			// TODO
+			// print out basic send information
 		} catch (IOException e) {
 			System.out.println("Couldn't Send");
 			e.printStackTrace();
 		}
 
-		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length, InetAddress.getByName(serverToAsk.getIpAddress()), 53);	
+		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length);	
 		try{
 			serverSocket.receive(fromServerToAsk);
+			// TODO
+			// print out basic receive information
 		} catch (IOException e) {
 			System.out.println("Couldn't Receive");
 			e.printStackTrace();
 		}
-
-		String result = parseIPFromResponse(fromServerToAsk);
 		
-		return result;
+		boolean answer = decodeMessage(fromServerToAsk);
+		cacheMessage(fromServerToAsk);
+		
+		if(answer) {
+			// we have our answer, send it back to user
+		} else {
+			// we do not have our answer, send packet to next server
+		}	
+		return null;
+	}
+
+	private void cacheMessage(DatagramPacket fromServerToAsk) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private boolean decodeMessage(DatagramPacket fromServerToAsk) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	/** Parse the IP Address returned from the DNS Response **/
+	/*
 	private String parseIPFromResponse(DatagramPacket receivePacket) throws UnknownHostException{
 		byte[] data = receivePacket.getData();
 		char[] hexC = Hex.encodeHex(data);
 		
-		//May need to set this up so the value isn't hard coded, may not be the same everytime...I don't know. 
+		//May need to set this up so the value isn't hard coded, may not be the same every time...I don't know. 
 		int index = 536;
 		String temp = "";
 		
@@ -116,6 +137,7 @@ public class DnsResolver {
 	
 		return result.toString();
 	}
+	*/
 
 	private boolean inCache(DatagramPacket receivePacket) {
 		// declare variables needed
@@ -142,6 +164,7 @@ public class DnsResolver {
 		} while (true);	
 		site = site.substring(0,site.length()-1);
 		askedSite = site;
+		System.out.println(askedSite);
 
 		String[] siteParts = site.split("\\.");
 		int times = 0;
@@ -160,6 +183,7 @@ public class DnsResolver {
 				serverToAsk = serverCache.get(check).get(check);
 				if(times == siteParts.length)  {
 					finalIp = serverToAsk.getIpAddress();
+					answer = serverToAsk;
 					return true;
 				}
 			} else {
