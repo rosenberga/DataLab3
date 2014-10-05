@@ -43,6 +43,20 @@ public class DnsResolver {
 				// wait to receive a packet
 				System.out.println("Waiting for client to connect");
 				serverSocket.receive(receivePacket);
+				
+				char[] c = Hex.encodeHex(receivePacket.getData());
+				
+				
+				for(int i = 0; i < c.length; i++) {
+					System.out.print(c[i] + "");
+					if((i+1)%2==0) {
+						System.out.print(" ");
+					}
+					if((i+1)%36 == 0) {
+						System.out.println("");
+					}
+				}
+				System.out.println("");
 
 				// flip the recursive bit
 				receivePacket.setData(flipRec(receivePacket));
@@ -50,6 +64,8 @@ public class DnsResolver {
 				// serverToAsk will be assigned to
 				// the best server to ask the question
 				serverToAsk = null;
+				
+				
 				
 				// check to see if we have cached the value before
 				if (!inCache(receivePacket)) {
@@ -78,6 +94,8 @@ public class DnsResolver {
 		sendData = receivePacket.getData();
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(server.getIpAddress()),53);
 		
+		
+
 		try {
 			serverSocket.send(sendPacket);
 			// TODO
@@ -393,9 +411,9 @@ public class DnsResolver {
 
 	private byte[] flipRec(DatagramPacket receivePacket) {
 		// set the recursion desired bit to 0
-		byte[] flip = receivePacket.getData();
-		flip[2] = 0;
-		return flip;
+		byte[] data = receivePacket.getData();
+		data[2] = 0;
+	    return data;
 	}
 
 	private void readRootFile() throws IOException {
