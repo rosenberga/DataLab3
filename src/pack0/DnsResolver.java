@@ -123,10 +123,29 @@ public class DnsResolver {
 	private byte[] getId(DatagramPacket receivePacket, byte[] data) throws DecoderException {
 		char[] d = Hex.encodeHex(data);
 		char[] c = Hex.encodeHex(receivePacket.getData());
-		int index = 0;
-		for(index = 0; index < 4; index++) {
-			d[index] = c[index];
+		
+		
+		int index = 24;
+		
+		do {
+			String hexS = c[index++] + "" + c[index++];
+			Long next = Long.parseLong(hexS, 16);
+			if (next == 0) {
+				break;
+			}
+			for (int i = 0; i < next; i++) {
+				index++;
+				index++;
+			}
+		} while (true);
+		
+		index += 8;
+		
+		for(int i = 0; i < index; i++) {
+			d[i] = c[i];
 		}
+		
+		
 		return Hex.decodeHex(d);
 	}
 
