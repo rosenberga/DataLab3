@@ -87,10 +87,16 @@ public class DnsResolver {
 		byte[] sendData = new byte[512];
 		byte[] receiveData = new byte[512];
 
+		for (int i = 0; i < receiveData.length; i++) {
+			receiveData[i] = 99;
+		}
+
 		sendData = receivePacket.getData();
 		DatagramPacket sendPacket = new DatagramPacket(sendData,
 				sendData.length, InetAddress.getByName(server.getIpAddress()),
 				sendPort);
+
+		System.out.println(server.getIpAddress());
 		try {
 			serverSocket.send(sendPacket);
 			// TODO
@@ -110,7 +116,6 @@ public class DnsResolver {
 			System.out.println("Couldn't Receive");
 			e.printStackTrace();
 		}
-		
 
 		boolean answer = decodeMessage(fromServerToAsk);
 
@@ -121,13 +126,13 @@ public class DnsResolver {
 		}
 	}
 
-	private byte[] getId(DatagramPacket receivePacket, byte[] data) throws DecoderException {
+	private byte[] getId(DatagramPacket receivePacket, byte[] data)
+			throws DecoderException {
 		char[] d = Hex.encodeHex(data);
 		char[] c = Hex.encodeHex(receivePacket.getData());
-		
-		
+
 		int index = 24;
-		
+
 		do {
 			String hexS = c[index++] + "" + c[index++];
 			Long next = Long.parseLong(hexS, 16);
@@ -139,25 +144,27 @@ public class DnsResolver {
 				index++;
 			}
 		} while (true);
-		
+
 		index += 8;
-		
-		for(int i = 0; i < index; i++) {
+
+		for (int i = 0; i < index; i++) {
 			d[i] = c[i];
 		}
-		
-		
+
 		return Hex.decodeHex(d);
 	}
 
 	private boolean decodeMessage(DatagramPacket data) {
-		// TODO Auto-generated method stub
 		char[] c = Hex.encodeHex(data.getData());
 		int index = 0;
 		/*
-		 * for(int i = 0; i < c.length; i++) { System.out.print(c[i] + "");
-		 * if((i+1)%2==0) { System.out.print(" "); } if((i+1)%36 == 0) {
-		 * System.out.println(""); } }
+		 * int last = 0; for (int i = c.length-2; i >= 0; i -= 2) { String s =
+		 * c[i] +"" +c[i+1]; if(s.equals("63")) { last = i; } else { break; } }
+		 * 
+		 * char[] d = new char[last]; for(int i = 0; i < d.length; i++) { d[i] =
+		 * c[i]; }
+		 * 
+		 * c = d;
 		 */
 		// read through flags
 		String transId = c[index++] + "" + c[index++] + "" + c[index++] + ""
@@ -173,9 +180,9 @@ public class DnsResolver {
 
 		String additRRS = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
-		// System.out.println("\n"+transId + " " + flagsId);
-		// System.out.println(questRRS + " " + answerRRs + " " + authRRS + " " +
-		// additRRS);
+		System.out.println("\n" + transId + " " + flagsId);
+		System.out.println(questRRS + " " + answerRRs + " " + authRRS + " "
+				+ additRRS);
 		// read through questions
 		do {
 			String hexS = c[index++] + "" + c[index++];
@@ -195,10 +202,9 @@ public class DnsResolver {
 				+ c[index++];
 		String qClass = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
-		int beforeAuth = index;
-		// System.out.println("\n"+qType+ " "+qClass);
 		// read through answers
-		if (Long.parseLong(answerRRs, 16) > 0) {
+		System.out.println(answerRRs);
+		if ((int) Long.parseLong(answerRRs, 16) > 0) {
 			String name = c[index++] + "" + c[index++] + "" + c[index++] + ""
 					+ c[index++];
 			String aType = c[index++] + "" + c[index++] + "" + c[index++] + ""
@@ -259,7 +265,7 @@ public class DnsResolver {
 				map.put(aName.toUpperCase(), c1);
 				serverCache.put(cName.toUpperCase(), map);
 			}
-			
+
 			pc = new printCache(serverCache);
 			pc.start();
 
@@ -271,121 +277,120 @@ public class DnsResolver {
 			String name = "";
 			String point = "";
 			int count = 0;
-			int position = 0;
-			int count2 = -1;
-			ArrayList<String> afters = new ArrayList<String>();
+			String before = "" + index / 2;
+			int c0 = (int) Long.parseLong(authRRS, 16);
+			int number = 1 + ((c0 - 1) * 2);
+			System.out.println(number + "");
 			if ((int) Long.parseLong(authRRS, 16) != 0) {
-			while (true) {
-				if (position == 0) {
-					position = (index) / 2;
+				while (count <= number) {
+
+					String bits = c[index++] + "" + c[index++];
+					if (bits.equals("c0")) {
+						count++;
+						if (count == 1) {
+							point = c[index++] + "" + c[index++];
+							int pointIndex = 2 * (int) Long
+									.parseLong(point, 16);
+							do {
+								String hexS = c[pointIndex++] + ""
+										+ c[pointIndex++];
+								Long next = Long.parseLong(hexS, 16);
+								if (next == 0) {
+									break;
+								}
+								for (int i = 0; i < next; i++) {
+									String h = c[pointIndex++] + ""
+											+ c[pointIndex++];
+
+									name += hexToASCII(h);
+								}
+								name += ".";
+							} while (true);
+							name = name.substring(0, name.length() - 1);
+						}
+					}
 				}
-				
-				String bits = c[index++] + "" + c[index++];
-				
-				if (bits.equals("c0")) {
-					count++;
-				}
-				if (count == 1 && bits.equals("c0")) {
-					point = c[index++] + "" + c[index++];
-					int pointIndex = 2 * (int) Long.parseLong(point, 16);
-					do {
-						String hexS = c[pointIndex++] + "" + c[pointIndex++];
-						Long next = Long.parseLong(hexS, 16);
-						if (next == 0) {
+				System.out.println("got out");
+				index -= 2;
+				if ((int) Long.parseLong(additRRS, 16) != 0) {
+					while (true) {
+						String test = c[index++] + "" + c[index++] + ""
+								+ c[index++] + "" + c[index++];
+						if (test.equals("0001")) {
+							index -= 8;
 							break;
 						}
-						for (int i = 0; i < next; i++) {
-							String h = c[pointIndex++] + "" + c[pointIndex++];
+					}
 
-							name += hexToASCII(h);
+					String nP = c[index++] + "" + c[index++] + "" + c[index++]
+							+ "" + c[index++];
+					String aType = c[index++] + "" + c[index++] + ""
+							+ c[index++] + "" + c[index++];
+					String aClass = c[index++] + "" + c[index++] + ""
+							+ c[index++] + "" + c[index++];
+					String ttl = c[index++] + "" + c[index++] + "" + c[index++]
+							+ "" + c[index++] + "" + c[index++] + ""
+							+ c[index++] + "" + c[index++] + "" + c[index++];
+
+					int timeToLive = (int) Long.parseLong(ttl, 16);
+
+					String dataLength = c[index++] + "" + c[index++] + ""
+							+ c[index++] + "" + c[index++];
+					int len = (int) Long.parseLong(dataLength, 16);
+					String aIP = "";
+					System.out.println(nP + " " + aType + " " + aClass + " "
+							+ ttl + " " + dataLength);
+					for (int i = 0; i < len; i++) {
+						String hex = c[index++] + "" + c[index++];
+						int value = (int) Long.parseLong(hex, 16);
+						aIP += value;
+						if (i + 1 != len) {
+							aIP += '.' + "";
 						}
-						name += ".";
+					}
+
+					int pIndex = (int) Long.parseLong(nP.substring(2), 16) * 2;
+					String aName = "";
+					do {
+						String hexS = c[pIndex++] + "" + c[pIndex++];
+
+						if (hexS.equals("c0")) {
+							String n = c[pIndex++] + "" + c[pIndex++];
+							pIndex = (int) Long.parseLong(n, 16) * 2;
+						} else {
+							Long next = Long.parseLong(hexS, 16);
+							if (next == 0) {
+								break;
+							}
+							for (int i = 0; i < next; i++) {
+								String h = c[pIndex++] + "" + c[pIndex++];
+
+								aName += hexToASCII(h);
+							}
+							aName += ".";
+						}
 					} while (true);
-					name = name.substring(0, name.length() - 1);
-				}
-				if (bits.equals("c0")) {
-					String s = c[index++] + "" + c[index++];
-					if(!afters.contains(s)) {
-						count2++;
-						afters.add(s);
-					}
-					if (s.equals(position+"")) {
-						System.out.println(position + " " +s+ " "+count2);
-						break;
-					} else if (count2 == 3){
-						System.out.println(position + " " +s+ " "+count2);
-						break;
+					aName = aName.substring(0, aName.length() - 1);
+
+					Cache c1 = new Cache(timeToLive, aIP, aName, data.getData());
+					// System.out.println("name " + name.toUpperCase());
+					// System.out.println("aname " + aName.toUpperCase());
+					if (serverCache.containsKey(name.toUpperCase())) {
+						Map<String, Cache> map = serverCache.get(name
+								.toUpperCase());
+						map.put(aName.toUpperCase(), c1);
+						serverCache.put(name.toUpperCase(), map);
 					} else {
+						HashMap<String, Cache> map = new HashMap<String, Cache>();
+						map.put(aName.toUpperCase(), c1);
+						serverCache.put(name.toUpperCase(), map);
 					}
+					pc = new printCache(serverCache);
+					pc.start();
+					serverToAsk = c1;
 				}
+				return false;
 			}
-			index -= 4;
-			}
-			String nP = c[index++] + "" + c[index++] + "" + c[index++] + ""
-					+ c[index++];
-			String aType = c[index++] + "" + c[index++] + "" + c[index++] + ""
-					+ c[index++];
-			String aClass = c[index++] + "" + c[index++] + "" + c[index++] + ""
-					+ c[index++];
-			String ttl = c[index++] + "" + c[index++] + "" + c[index++] + ""
-					+ c[index++] + "" + c[index++] + "" + c[index++] + ""
-					+ c[index++] + "" + c[index++];
-
-			int timeToLive = (int) Long.parseLong(ttl, 16);
-			
-			String dataLength = c[index++] + "" + c[index++] + "" + c[index++]
-					+ "" + c[index++];
-			int len = (int) Long.parseLong(dataLength, 16);
-			String aIP = "";
-			System.out.println(aType +" "+aClass+" "+ttl+" "+dataLength);
-			for (int i = 0; i < len; i++) {
-				String hex = c[index++] + "" + c[index++];
-				int value = (int) Long.parseLong(hex, 16);
-				aIP += value;
-				if (i + 1 != len) {
-					aIP += '.' + "";
-				}
-			}
-
-			int pIndex = (int) Long.parseLong(nP.substring(2), 16) * 2;
-			String aName = "";
-			do {
-				String hexS = c[pIndex++] + "" + c[pIndex++];
-
-				if (hexS.equals("c0")) {
-					String n = c[pIndex++] + "" + c[pIndex++];
-					pIndex = (int) Long.parseLong(n, 16) * 2;
-				} else {
-					Long next = Long.parseLong(hexS, 16);
-					if (next == 0) {
-						break;
-					}
-					for (int i = 0; i < next; i++) {
-						String h = c[pIndex++] + "" + c[pIndex++];
-
-						aName += hexToASCII(h);
-					}
-					aName += ".";
-				}
-			} while (true);
-			aName = aName.substring(0, aName.length() - 1);
-
-			Cache c1 = new Cache(timeToLive, aIP, aName, data.getData());
-			//System.out.println("name " + name.toUpperCase());
-			//System.out.println("aname " + aName.toUpperCase());
-			if (serverCache.containsKey(name.toUpperCase())) {
-				Map<String, Cache> map = serverCache.get(name.toUpperCase());
-				map.put(aName.toUpperCase(), c1);
-				serverCache.put(name.toUpperCase(), map);
-			} else {
-				HashMap<String, Cache> map = new HashMap<String, Cache>();
-				map.put(aName.toUpperCase(), c1);
-				serverCache.put(name.toUpperCase(), map);
-			}
-			pc = new printCache(serverCache);
-			 pc.start();
-			serverToAsk = c1;
-
 			return false;
 		}
 	}
@@ -430,13 +435,30 @@ public class DnsResolver {
 				times++;
 
 				Map<String, Cache> roots = serverCache.get(check.toUpperCase());
+				
 				String[] keys = roots.keySet().toArray(new String[0]);
-				serverToAsk = roots.get(keys[0]);
-
+				for (int i = 0; i < keys.length; i++) {
+					Cache c = roots.get(keys[0]);
+					if (c.isDead()) {
+						roots.remove(keys[i]);
+						serverCache.put(check.toUpperCase(), roots);
+					} else {
+						serverToAsk = c;
+						break;
+					}
+				}
 				if (times == siteParts.length) {
-					finalIp = serverToAsk.getIpAddress();
-					answer = serverToAsk;
-					return true;
+					if(serverToAsk == null) {
+						roots = serverCache.get("ROOT");
+						keys = roots.keySet().toArray(new String[0]);
+						serverToAsk = roots.get(keys[0]);
+						return false;
+					} else {
+						finalIp = serverToAsk.getIpAddress();
+						answer = serverToAsk;
+						return true;
+					}
+					
 				}
 			} else {
 				// make sure that it is at least set to root
@@ -504,21 +526,17 @@ public class DnsResolver {
 		}
 
 		public void run() {
-			
+
 			String[] keys = currentCache.keySet().toArray(new String[0]);
-			/*for (int i = 0; i < keys.length; i++) {
-				Map<String, Cache> map = currentCache.get(keys[i]);
-				String[] k = map.keySet().toArray(new String[0]);
-				for (int j = 0; j < k.length; j++) {
-					Cache c = map.get(k[j]);
-					System.out.println(c.getDetails());
-				}
-			}
-			
-			for(int i = 0; i < keys.length; i++) {
-				System.out.println(keys[i]);
-			}
-			*/
+			/*
+			 * for (int i = 0; i < keys.length; i++) { Map<String, Cache> map =
+			 * currentCache.get(keys[i]); String[] k = map.keySet().toArray(new
+			 * String[0]); for (int j = 0; j < k.length; j++) { Cache c =
+			 * map.get(k[j]); System.out.println(c.getDetails()); } }
+			 * 
+			 * for(int i = 0; i < keys.length; i++) {
+			 * System.out.println(keys[i]); }
+			 */
 		}
 	}
 }

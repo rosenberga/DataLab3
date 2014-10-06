@@ -58,5 +58,9 @@ public class Cache {
 		this.timeToDie = timeToDie;
 	}
 	
+	public boolean isDead() {
+		return System.currentTimeMillis() > timeToDie;
+	}
+	
 	
 }
