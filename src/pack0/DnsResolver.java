@@ -62,7 +62,7 @@ public class DnsResolver {
 				}
 				
 				// send to user
-				byte[] toSend = answer.getDetails().getBytes();
+				byte[] toSend = answer.getData();
 				DatagramPacket sendPacket = new DatagramPacket(toSend, toSend.length, receivePacket.getAddress(),receivePacket.getPort());
 				serverSocket.send(sendPacket);
 			}
@@ -197,35 +197,7 @@ public class DnsResolver {
 			Cache c1 = new Cache (timeToLive,aIP,aName,data.getData());
 			answer = c1;
 			
-			// find the name to put into cache
-			// put this into cache
-			String cName = "";
-			
-			int count = 0;
-			int times = (int)Long.parseLong(answerRRs, 16);
-			while(count < times) {
-				String bits = c[index++] + ""+ c[index++];
-				if(bits.equals("c0")) {
-					count++;
-				}
-			}
-			String point = c[index++]+""+c[index++];
-			int pI = (int) Long.parseLong(point,16) * 2;
-			
-			do {
-				String hexS = c[pI++] + "" + c[pI++];
-				Long next = Long.parseLong(hexS, 16);
-				if(next == 0) {
-					break;
-				}
-				for (int i = 0; i < next; i++) {
-					String h = c[pI++] + "" + c[pI++];
-					
-					cName += hexToASCII(h);
-				}
-				cName += ".";
-			} while (true);	
-			cName = cName.substring(0, cName.length()-1);
+			String cName = askedSite;
 			
 			if(serverCache.containsKey(cName.toUpperCase())) {
 				Map<String, Cache> map = serverCache.get(cName.toUpperCase());
