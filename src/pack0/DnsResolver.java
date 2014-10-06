@@ -110,6 +110,7 @@ public class DnsResolver {
 			System.out.println("Couldn't Receive");
 			e.printStackTrace();
 		}
+		
 
 		boolean answer = decodeMessage(fromServerToAsk);
 
@@ -268,11 +269,19 @@ public class DnsResolver {
 
 			// get name so we can put it into the map
 			String name = "";
-			Long auth = ((Long.parseLong(authRRS, 16) * 2) - 1);
 			String point = "";
 			int count = 0;
+			int position = 0;
+			int count2 = -1;
+			ArrayList<String> afters = new ArrayList<String>();
+			if ((int) Long.parseLong(authRRS, 16) != 0) {
 			while (true) {
+				if (position == 0) {
+					position = (index) / 2;
+				}
+				
 				String bits = c[index++] + "" + c[index++];
+				
 				if (bits.equals("c0")) {
 					count++;
 				}
@@ -295,13 +304,23 @@ public class DnsResolver {
 					name = name.substring(0, name.length() - 1);
 				}
 				if (bits.equals("c0")) {
-					if ((c[index++] + "" + c[index++]).equals("2c")) {
+					String s = c[index++] + "" + c[index++];
+					if(!afters.contains(s)) {
+						count2++;
+						afters.add(s);
+					}
+					if (s.equals(position+"")) {
+						System.out.println(position + " " +s+ " "+count2);
 						break;
+					} else if (count2 == 3){
+						System.out.println(position + " " +s+ " "+count2);
+						break;
+					} else {
 					}
 				}
 			}
 			index -= 4;
-
+			}
 			String nP = c[index++] + "" + c[index++] + "" + c[index++] + ""
 					+ c[index++];
 			String aType = c[index++] + "" + c[index++] + "" + c[index++] + ""
@@ -313,11 +332,12 @@ public class DnsResolver {
 					+ c[index++] + "" + c[index++];
 
 			int timeToLive = (int) Long.parseLong(ttl, 16);
-
+			
 			String dataLength = c[index++] + "" + c[index++] + "" + c[index++]
 					+ "" + c[index++];
 			int len = (int) Long.parseLong(dataLength, 16);
 			String aIP = "";
+			System.out.println(aType +" "+aClass+" "+ttl+" "+dataLength);
 			for (int i = 0; i < len; i++) {
 				String hex = c[index++] + "" + c[index++];
 				int value = (int) Long.parseLong(hex, 16);
