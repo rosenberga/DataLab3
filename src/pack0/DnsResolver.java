@@ -54,14 +54,20 @@ public class DnsResolver {
 				// serverToAsk will be assigned to
 				// the best server to ask the question
 				serverToAsk = null;
-
+				byte[] toSend = null;
 				// check to see if we have cached the value before
 				if (!inCache(receivePacket)) {
 					finalIp = askServer(receivePacket, serverToAsk);
+					toSend = answer.getData();
+				} else {
+					try {
+						toSend = getId(receivePacket, serverToAsk.getData());
+					} catch (DecoderException e) {
+						e.printStackTrace();
+					}
 				}
 
 				// send to user
-				byte[] toSend = answer.getData();
 				DatagramPacket sendPacket = new DatagramPacket(toSend,
 						toSend.length, receivePacket.getAddress(),
 						receivePacket.getPort());
@@ -108,11 +114,6 @@ public class DnsResolver {
 		boolean answer = decodeMessage(fromServerToAsk);
 
 		if (answer) {
-			try {
-				receivePacket.setData(getId(receivePacket, serverToAsk.getData()));
-			} catch (DecoderException e) {
-				e.printStackTrace();
-			}
 			return serverToAsk.getIpAddress();
 		} else {
 			return askServer(receivePacket, serverToAsk);
