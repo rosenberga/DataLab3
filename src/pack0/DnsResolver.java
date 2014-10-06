@@ -7,17 +7,20 @@ import java.util.*;
 import org.apache.commons.codec.binary.Hex;
 
 public class DnsResolver {
-	private int port;
 	private static final String rootServerFile = "RootFile.txt";
 	private Map<String, Map<String, Cache>> serverCache;
 	private DatagramSocket serverSocket;
+	private DatagramSocket otherSocket;
 	private Cache serverToAsk;
 	private byte[] serverData;
 	private String askedSite;
 	private String finalIp;
 	private Cache answer;
 	private printCache pc;
-
+	
+	private int sendPort = 53;
+	private int recPort;
+	
 	public static void main(String[] args) {
 		try {
 			new DnsResolver(args[0]);
@@ -27,36 +30,22 @@ public class DnsResolver {
 	}
 
 	public DnsResolver(String port) throws IOException {
-
+		recPort = Integer.parseInt(port);
 		// set up basic cache
-		this.port = Integer.parseInt(port);
 		serverCache = new HashMap<String, Map<String, Cache>>();
 		readRootFile();
+		
 		// set up server socket and receive packet
-		serverSocket = new DatagramSocket(this.port);
+		serverSocket = new DatagramSocket(recPort);
 		try {
 			while (true) {
-				byte[] receiveData = new byte[1024];
+				byte[] receiveData = new byte[512];
 				DatagramPacket receivePacket = new DatagramPacket(receiveData,
 						receiveData.length);
 
 				// wait to receive a packet
 				System.out.println("Waiting for client to connect");
 				serverSocket.receive(receivePacket);
-				
-				char[] c = Hex.encodeHex(receivePacket.getData());
-				
-				
-				for(int i = 0; i < c.length; i++) {
-					System.out.print(c[i] + "");
-					if((i+1)%2==0) {
-						System.out.print(" ");
-					}
-					if((i+1)%36 == 0) {
-						System.out.println("");
-					}
-				}
-				System.out.println("");
 
 				// flip the recursive bit
 				receivePacket.setData(flipRec(receivePacket));
@@ -87,15 +76,11 @@ public class DnsResolver {
 	private String askServer(DatagramPacket receivePacket, Cache server) throws UnknownHostException {
 		// if you have to ask more than one server, then
 		// call their function recursively
-		byte[] sendData = new byte[1024];
-		byte[] receiveData = new byte[1024];
+		byte[] sendData = new byte[512];
+		byte[] receiveData = new byte[512];
 	
-		System.out.println(serverToAsk.getIpAddress());
 		sendData = receivePacket.getData();
-		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(server.getIpAddress()),53);
-		
-		
-
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(server.getIpAddress()),sendPort);
 		try {
 			serverSocket.send(sendPacket);
 			// TODO
@@ -104,8 +89,8 @@ public class DnsResolver {
 			System.out.println("Couldn't Send");
 			e.printStackTrace();
 		}
-
-		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length,InetAddress.getByName(server.getIpAddress()),53);	
+		
+		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData, receiveData.length);	
 		try{
 			serverSocket.receive(fromServerToAsk);
 			// TODO
@@ -123,6 +108,7 @@ public class DnsResolver {
 			// we do not have our answer, send packet to next server
 			// but change the packet so it has the right info
 			// TODO
+			System.out.println("\n\nNow going to ask: "+serverToAsk.getIpAddress()+"\n");
 			return askServer(receivePacket, serverToAsk);
 		}
 	}
@@ -131,8 +117,7 @@ public class DnsResolver {
 		// TODO Auto-generated method stub
 		char[] c = Hex.encodeHex(data.getData());
 		int index = 0;
-		
-		
+		/*
 		for(int i = 0; i < c.length; i++) {
 			System.out.print(c[i] + "");
 			if((i+1)%2==0) {
@@ -142,7 +127,7 @@ public class DnsResolver {
 				System.out.println("");
 			}
 		}
-		
+		*/
 		// read through flags
 		String transId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String flagsId = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
@@ -151,7 +136,7 @@ public class DnsResolver {
 		String authRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		
 		String additRRS = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
-		//System.out.println(transId + " " + flagsId);
+		//System.out.println("\n"+transId + " " + flagsId);
 		//System.out.println(questRRS + " " + answerRRs + " " + authRRS + " " + additRRS);
 		// read through questions
 		do {
@@ -171,7 +156,7 @@ public class DnsResolver {
 		String qType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		String qClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 		int beforeAuth = index;
-		
+		//System.out.println("\n"+qType+ " "+qClass);
 		// read through answers
 		if (Long.parseLong(answerRRs, 16) > 0) {
 			String name = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
@@ -258,47 +243,53 @@ public class DnsResolver {
 			
 			// get name so we can put it into the map
 			String name = "";
-			Long auth = ((Long.parseLong(authRRS, 16) * 2) -1);
+			Long auth = ((Long.parseLong(authRRS, 16) * 2)-1);
+			String point = "";
 			int count = 0;
-			while(count < auth) {
+			while(true) {
 				String bits = c[index++] + ""+ c[index++];
 				if(bits.equals("c0")) {
 					count++;
 				}
-				if (count == 1) {
-					String point = c[index++] + ""+ c[index++];
+				if (count == 1 && bits.equals("c0")) {
+					point = c[index++] + ""+ c[index++];
 					int pointIndex = 2 * (int)Long.parseLong(point, 16);
-					int next = (int) Long.parseLong(c[pointIndex++] + "" + c[pointIndex++], 16);
-					for (int i = 0; i < next; i++) {
-						String h = c[pointIndex++] + "" + c[pointIndex++];
-						name += hexToASCII(h);
+					do {
+						String hexS = c[pointIndex++] + "" + c[pointIndex++];
+						Long next = Long.parseLong(hexS, 16);
+						if(next == 0) {
+							break;
+						}
+						for (int i = 0; i < next; i++) {
+							String h = c[pointIndex++] + "" + c[pointIndex++];
+							
+							name += hexToASCII(h);
+						}
+						name += ".";
+					} while (true);	
+					name = name.substring(0,name.length()-1);
+				}
+				if(bits.equals("c0")) {
+					if((c[index++] + ""+ c[index++]).equals("2c")) {
+						break;
 					}
 				}
 			}
-			index++;
-			index++;
+			index--;
+			index--;
+			index--;
+			index--;
 			
-			//System.out.println("After Auth:" + index+"");
-			
-			// find first addition, make it our serverToAsk
-			String addition = "";
-			count = 0;
-			while (count < 3) {
-				String bits = c[index++] + ""+ c[index++];
-				if(bits.equals("c0")) {
-					count++;
-				}
-				if (count < 3) {
-					addition += bits;
-				}
-			}
 			
 			String nP = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			String aType = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			String aClass = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			String ttl = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++] + 
 					"" + c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
+			
 			int timeToLive = (int)Long.parseLong(ttl,16);
+			
+			
 			String dataLength = c[index++] + ""+ c[index++] + "" + c[index++] + ""  + c[index++];
 			int len = (int)Long.parseLong(dataLength, 16);
 			String aIP = "";
@@ -370,7 +361,6 @@ public class DnsResolver {
 		} while (true);	
 		site = site.substring(0,site.length()-1);
 		askedSite = site;
-		System.out.println(askedSite);
 
 		String[] siteParts = site.split("\\.");
 		int times = 0;
