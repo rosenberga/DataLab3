@@ -38,6 +38,8 @@ public class DnsResolver {
 
 		// set up server socket and receive packet
 		serverSocket = new DatagramSocket(recPort);
+
+		System.out.println("Listening on port: " + recPort);
 		try {
 			while (true) {
 				byte[] receiveData = new byte[512];
@@ -46,6 +48,13 @@ public class DnsResolver {
 
 				// wait to receive a packet
 				System.out.println("Waiting for client to connect");
+
+				try {
+					serverSocket.setSoTimeout(0);
+				} catch (SocketException e1) {
+					System.out.println("Socket Time Out");
+				}
+
 				serverSocket.receive(receivePacket);
 
 				// flip the recursive bit
@@ -58,6 +67,12 @@ public class DnsResolver {
 				// check to see if we have cached the value before
 				if (!inCache(receivePacket)) {
 					finalIp = askServer(receivePacket, serverToAsk);
+					if (finalIp.equals("")) {
+						System.out
+								.println("An error has occured in sending and receiving packets.");
+						System.out.println("Program is now terminating");
+						return;
+					}
 					toSend = answer.getData();
 				} else {
 					try {
@@ -72,9 +87,11 @@ public class DnsResolver {
 						toSend.length, receivePacket.getAddress(),
 						receivePacket.getPort());
 				serverSocket.send(sendPacket);
+
+				System.out.println("Data on " + askedSite
+						+ " sent to client.\n");
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			serverSocket.close();
 			return;
 		}
@@ -82,52 +99,58 @@ public class DnsResolver {
 
 	private String askServer(DatagramPacket receivePacket, Cache server)
 			throws UnknownHostException {
-		
+
 		try {
 			serverSocket.setSoTimeout(9000);
 		} catch (SocketException e1) {
 			System.out.println("Socket Time Out");
+			return "";
 		}
 		// if you have to ask more than one server, then
 		// call their function recursively
 		byte[] sendData = new byte[512];
 		byte[] receiveData = new byte[512];
 
-		for (int i = 0; i < receiveData.length; i++) {
-			receiveData[i] = 99;
-		}
-
 		sendData = receivePacket.getData();
 		DatagramPacket sendPacket = new DatagramPacket(sendData,
 				sendData.length, InetAddress.getByName(server.getIpAddress()),
 				sendPort);
+		System.out.println("\nCommunicating with the following server: \n"
+				+ server.getDetails());
 
-		System.out.println(server.getIpAddress());
 		try {
 			serverSocket.send(sendPacket);
-			// TODO
-			// print out basic send information
+			System.out.println("Data packet send to the above server.");
 		} catch (IOException e) {
 			System.out.println("Couldn't Send");
-			e.printStackTrace();
+			return "";
 		}
 
 		DatagramPacket fromServerToAsk = new DatagramPacket(receiveData,
 				receiveData.length);
 		try {
 			serverSocket.receive(fromServerToAsk);
-			// TODO
-			// print out basic receive information
+			System.out.println("Data packet received from the above server.");
 		} catch (IOException e) {
 			System.out.println("Couldn't Receive");
-			e.printStackTrace();
+			return "";
+		}
+
+		try {
+			serverSocket.setSoTimeout(0);
+		} catch (SocketException e1) {
+			System.out.println("Socket Time Out");
+			return "";
 		}
 
 		boolean answer = decodeMessage(fromServerToAsk);
 
 		if (answer) {
+			System.out.println("Answer was found in the latest data packet.");
 			return serverToAsk.getIpAddress();
 		} else {
+			System.out
+					.println("No answer was found, ready to communicate with next server.");
 			return askServer(receivePacket, serverToAsk);
 		}
 	}
@@ -163,15 +186,7 @@ public class DnsResolver {
 	private boolean decodeMessage(DatagramPacket data) {
 		char[] c = Hex.encodeHex(data.getData());
 		int index = 0;
-		/*
-		 * int last = 0; for (int i = c.length-2; i >= 0; i -= 2) { String s =
-		 * c[i] +"" +c[i+1]; if(s.equals("63")) { last = i; } else { break; } }
-		 * 
-		 * char[] d = new char[last]; for(int i = 0; i < d.length; i++) { d[i] =
-		 * c[i]; }
-		 * 
-		 * c = d;
-		 */
+
 		// read through flags
 		String transId = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
@@ -183,12 +198,9 @@ public class DnsResolver {
 				+ c[index++];
 		String authRRS = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
-
 		String additRRS = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
-		System.out.println("\n" + transId + " " + flagsId);
-		System.out.println(questRRS + " " + answerRRs + " " + authRRS + " "
-				+ additRRS);
+
 		// read through questions
 		do {
 			String hexS = c[index++] + "" + c[index++];
@@ -202,14 +214,11 @@ public class DnsResolver {
 			}
 		} while (true);
 
-		// System.out.println("After Question:" + index+"");
-
 		String qType = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
 		String qClass = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
 		// read through answers
-		System.out.println(answerRRs);
 		if ((int) Long.parseLong(answerRRs, 16) > 0) {
 			String name = c[index++] + "" + c[index++] + "" + c[index++] + ""
 					+ c[index++];
@@ -283,10 +292,8 @@ public class DnsResolver {
 			String name = "";
 			String point = "";
 			int count = 0;
-			String before = "" + index / 2;
 			int c0 = (int) Long.parseLong(authRRS, 16);
 			int number = 1 + ((c0 - 1) * 2);
-			System.out.println(number + "");
 			if ((int) Long.parseLong(authRRS, 16) != 0) {
 				while (count <= number) {
 
@@ -316,7 +323,6 @@ public class DnsResolver {
 						}
 					}
 				}
-				System.out.println("got out");
 				index -= 2;
 				if ((int) Long.parseLong(additRRS, 16) != 0) {
 					while (true) {
@@ -344,8 +350,6 @@ public class DnsResolver {
 							+ c[index++] + "" + c[index++];
 					int len = (int) Long.parseLong(dataLength, 16);
 					String aIP = "";
-					System.out.println(nP + " " + aType + " " + aClass + " "
-							+ ttl + " " + dataLength);
 					for (int i = 0; i < len; i++) {
 						String hex = c[index++] + "" + c[index++];
 						int value = (int) Long.parseLong(hex, 16);
@@ -379,8 +383,7 @@ public class DnsResolver {
 					aName = aName.substring(0, aName.length() - 1);
 
 					Cache c1 = new Cache(timeToLive, aIP, aName, data.getData());
-					// System.out.println("name " + name.toUpperCase());
-					// System.out.println("aname " + aName.toUpperCase());
+
 					if (serverCache.containsKey(name.toUpperCase())) {
 						Map<String, Cache> map = serverCache.get(name
 								.toUpperCase());
@@ -426,7 +429,7 @@ public class DnsResolver {
 		} while (true);
 		site = site.substring(0, site.length() - 1);
 		askedSite = site;
-
+		System.out.println("Received request from client: " + askedSite);
 		String[] siteParts = site.split("\\.");
 		int times = 0;
 		while (true) {
@@ -441,7 +444,7 @@ public class DnsResolver {
 				times++;
 
 				Map<String, Cache> roots = serverCache.get(check.toUpperCase());
-				
+
 				String[] keys = roots.keySet().toArray(new String[0]);
 				for (int i = 0; i < keys.length; i++) {
 					Cache c = roots.get(keys[0]);
@@ -450,11 +453,13 @@ public class DnsResolver {
 						serverCache.put(check.toUpperCase(), roots);
 					} else {
 						serverToAsk = c;
+						System.out.println("Found in cache: "
+								+ check.toUpperCase());
 						break;
 					}
 				}
 				if (times == siteParts.length) {
-					if(serverToAsk == null) {
+					if (serverToAsk == null) {
 						roots = serverCache.get("ROOT");
 						keys = roots.keySet().toArray(new String[0]);
 						serverToAsk = roots.get(keys[0]);
@@ -462,9 +467,11 @@ public class DnsResolver {
 					} else {
 						finalIp = serverToAsk.getIpAddress();
 						answer = serverToAsk;
+						System.out
+								.println("Answer found in cache. Sending to user.");
 						return true;
 					}
-					
+
 				}
 			} else {
 				// make sure that it is at least set to root
@@ -524,25 +531,37 @@ public class DnsResolver {
 
 	private class printCache extends Thread {
 		private Map<String, Map<String, Cache>> currentCache;
-		private String fileName;
+		private String fileName = "CacheDetails.txt";
 
 		public printCache(Map<String, Map<String, Cache>> cache) {
 			currentCache = cache;
-			fileName = "CurrentCache.txt";
 		}
 
 		public void run() {
 
-			String[] keys = currentCache.keySet().toArray(new String[0]);
-			/*
-			 * for (int i = 0; i < keys.length; i++) { Map<String, Cache> map =
-			 * currentCache.get(keys[i]); String[] k = map.keySet().toArray(new
-			 * String[0]); for (int j = 0; j < k.length; j++) { Cache c =
-			 * map.get(k[j]); System.out.println(c.getDetails()); } }
-			 * 
-			 * for(int i = 0; i < keys.length; i++) {
-			 * System.out.println(keys[i]); }
-			 */
+			
+			PrintWriter writer = null;
+			try {
+				writer = new PrintWriter(fileName, "UTF-8");
+				String[] keys = currentCache.keySet().toArray(new String[0]);
+
+				for (int i = 0; i < keys.length; i++) {
+					Map<String, Cache> map = currentCache.get(keys[i]);
+					String[] k = map.keySet().toArray(new String[0]);
+					for (int j = 0; j < k.length; j++) {
+						Cache c = map.get(k[j]);
+						System.out.println(c.getDetails());
+						writer.println(c.getDetails());
+					}
+				}
+				writer.close();
+			} catch (FileNotFoundException | UnsupportedEncodingException e) {
+				System.out.println("Error when writing cahce to file");
+				if(writer != null) {
+					writer.close();
+				}
+				return;
+			}
 		}
 	}
 }

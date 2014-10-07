@@ -1,0 +1,84 @@
+Server Name: google.com
+ipAddress: 74.125.225.129
+Time To Live: 300
+
+Server Name: ns2.google.com
+ipAddress: 216.239.34.10
+Time To Live: 172800
+
+Server Name: www.nhl.com
+ipAddress: 3.119.119.119.3.110.104.108.3.99.111.109.9.101.100.103.101.115.117.105.116.101.3.110.101.116.0
+Time To Live: 300
+
+Server Name: www.gvsu.edu
+ipAddress: 148.61.6.9
+Time To Live: 3600
+
+Server Name: a.edu-servers.net
+ipAddress: 192.5.6.30
+Time To Live: 172800
+
+Server Name: A.ROOT-SERVERS.NET.
+ipAddress: 198.41.0.4
+Time To Live: 3600000
+
+Server Name: C.ROOT-SERVERS.NET.
+ipAddress: 192.33.4.12
+Time To Live: 3600000
+
+Server Name: F.ROOT-SERVERS.NET.
+ipAddress: 192.5.5.241
+Time To Live: 3600000
+
+Server Name: G.ROOT-SERVERS.NET.
+ipAddress: 192.112.36.4
+Time To Live: 3600000
+
+Server Name: L.ROOT-SERVERS.NET.
+ipAddress: 199.7.83.42
+Time To Live: 3600000
+
+Server Name: H.ROOT-SERVERS.NET.
+ipAddress: 128.63.2.53
+Time To Live: 3600000
+
+Server Name: D.ROOT-SERVERS.NET.
+ipAddress: 199.7.91.13
+Time To Live: 3600000
+
+Server Name: J.ROOT-SERVERS.NET.
+ipAddress: 192.58.128.30
+Time To Live: 3600000
+
+Server Name: K.ROOT-SERVERS.NET.
+ipAddress: 193.0.14.129
+Time To Live: 3600000
+
+Server Name: I.ROOT-SERVERS.NET.
+ipAddress: 192.36.148.17
+Time To Live: 3600000
+
+Server Name: E.ROOT-SERVERS.NET.
+ipAddress: 192.203.230.10
+Time To Live: 3600000
+
+Server Name: B.ROOT-SERVERS.NET.
+ipAddress: 192.228.79.201
+Time To Live: 3600000
+
+Server Name: M.ROOT-SERVERS.NET.
+ipAddress: 202.12.27.33
+Time To Live: 3600000
+
+Server Name: usw1.akam.net
+ipAddress: 23.61.199.66
+Time To Live: 172800
+
+Server Name: a.gtld-servers.net
+ipAddress: 192.5.6.30
+Time To Live: 172800
+
+Server Name: dns.merit.net
+ipAddress: 198.108.1.43
+Time To Live: 172800
+
