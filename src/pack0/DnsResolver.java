@@ -120,6 +120,7 @@ public class DnsResolver {
 
 		try {
 			serverSocket.send(sendPacket);
+			System.out.println("Querying the server about: "+askedSite);
 			System.out.println("Data packet send to the above server.");
 		} catch (IOException e) {
 			System.out.println("Couldn't Send");
@@ -200,6 +201,14 @@ public class DnsResolver {
 				+ c[index++];
 		String additRRS = c[index++] + "" + c[index++] + "" + c[index++] + ""
 				+ c[index++];
+		
+		System.out.println("Information about the packet (all values in hex): \n"
+				+"Transation ID: " + transId 
+				+"\nFlags ID: " + flagsId
+				+"\nQuestion RRS: "+questRRS
+				+"\nAnswer RRS: "+answerRRs
+				+"\nAuthority RRS: "+authRRS
+				+"\nAdditional RRS: "+additRRS);
 
 		// read through questions
 		do {
@@ -550,7 +559,6 @@ public class DnsResolver {
 					String[] k = map.keySet().toArray(new String[0]);
 					for (int j = 0; j < k.length; j++) {
 						Cache c = map.get(k[j]);
-						System.out.println(c.getDetails());
 						writer.println(c.getDetails());
 					}
 				}
