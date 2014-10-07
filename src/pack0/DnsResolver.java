@@ -82,6 +82,12 @@ public class DnsResolver {
 
 	private String askServer(DatagramPacket receivePacket, Cache server)
 			throws UnknownHostException {
+		
+		try {
+			serverSocket.setSoTimeout(9000);
+		} catch (SocketException e1) {
+			System.out.println("Socket Time Out");
+		}
 		// if you have to ask more than one server, then
 		// call their function recursively
 		byte[] sendData = new byte[512];
